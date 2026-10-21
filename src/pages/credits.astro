@@ -2,7 +2,7 @@
 import Prose from '../layouts/Prose.astro';
 import { SITE } from '../data/site';
 ---
-<Prose title="Credits and licenses" kicker="Thanks" updated={SITE.legalUpdated} description={`The fonts, libraries and tools behind ${SITE.name}.`}>
+<Prose title="Credits and licenses" updated={SITE.legalUpdated} description={`The fonts, libraries and tools behind ${SITE.name}.`}>
   <p>Games, art and writing by {SITE.handle}. This site is built with these open tools, all served from this site itself.</p>
 
   <h2>Fonts</h2>
@@ -12,7 +12,6 @@ import { SITE } from '../data/site';
       <tbody>
         <tr><td>Bungee</td><td><a href="https://github.com/djrrb/Bungee" rel="noopener">The Bungee Project Authors</a> (David Jonathan Ross)</td><td><a href="https://openfontlicense.org" rel="noopener">SIL Open Font License 1.1</a></td></tr>
         <tr><td>Instrument Sans</td><td><a href="https://github.com/Instrument/instrument-sans" rel="noopener">The Instrument Sans Project Authors</a></td><td>SIL Open Font License 1.1</td></tr>
-        <tr><td>Martian Mono</td><td><a href="https://github.com/evilmartians/mono" rel="noopener">The Martian Mono Project Authors</a> (Evil Martians)</td><td>SIL Open Font License 1.1</td></tr>
       </tbody>
     </table>
   </div>
@@ -24,7 +23,7 @@ import { SITE } from '../data/site';
       <thead><tr><th>Project</th><th>Used for</th><th>License</th></tr></thead>
       <tbody>
         <tr><td><a href="https://astro.build" rel="noopener">Astro</a></td><td>Building the site</td><td>MIT</td></tr>
-        <tr><td><a href="https://gsap.com" rel="noopener">GSAP</a></td><td>Headline and filter animation</td><td><a href="https://gsap.com/standard-license" rel="noopener">GSAP Standard "No Charge" License</a></td></tr>
+        <tr><td><a href="https://gsap.com" rel="noopener">GSAP</a></td><td>Animation</td><td><a href="https://gsap.com/standard-license" rel="noopener">GSAP Standard "No Charge" License</a></td></tr>
         <tr><td><a href="https://www.typescriptlang.org" rel="noopener">TypeScript</a></td><td>Site and game code</td><td>Apache 2.0</td></tr>
         <tr><td><a href="https://pages.github.com" rel="noopener">GitHub Pages</a></td><td>Hosting</td><td>Service, under GitHub's terms</td></tr>
       </tbody>

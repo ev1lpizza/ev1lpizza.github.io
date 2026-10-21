@@ -89,4 +89,3 @@ export function mountAttract(cv: HTMLCanvasElement, name: string, active: () => 
 const redraw = () => mounted.forEach((m) => (m.drawn = false));
 window.addEventListener('resize', redraw);
 window.addEventListener('ev1l:theme', redraw);
-window.addEventListener('ev1l:calm', redraw);

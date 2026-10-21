@@ -1,0 +1,35 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { SITE, fmtDate, url } from '../../data/site';
+
+const posts = (await getCollection('devlog', ({ data }) => !data.draft)).sort((a, b) => +b.data.date - +a.data.date);
+---
+<Base title="Devlog" description={`Notes from ${SITE.name}.`}>
+  <section class="wrap log-page" aria-labelledby="log-h">
+    <h1 id="log-h">Devlog</h1>
+    <ol class="log">
+      {posts.map((p) => (
+        <li>
+          <a href={url(`devlog/${p.id}/`)}>
+            <time datetime={p.data.date.toISOString().slice(0, 10)}>{fmtDate(p.data.date)}</time>
+            <strong>{p.data.title}</strong>
+          </a>
+        </li>
+      ))}
+    </ol>
+    <p class="muted rss"><a href={url('rss.xml')}>RSS feed</a></p>
+  </section>
+</Base>
+
+<style>
+  .log-page { padding-block: clamp(40px, 8vw, 104px) clamp(64px, 9vw, 120px); }
+  h1 { font-size: clamp(48px, 9vw, 120px); margin: 0 0 clamp(28px, 5vw, 56px); }
+  .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-width: 880px; }
+  .log a { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); align-items: baseline; gap: 6px 20px; padding: 22px 26px; border-radius: var(--r); background: var(--plate); text-decoration: none; transition: background-color .2s, transform .3s var(--ease-out); }
+  .log a:hover { background: var(--plate-2); transform: translateX(4px); }
+  .log time { color: var(--ash); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .log strong { font-size: clamp(19px, 2vw, 24px); font-weight: 700; }
+  @media (max-width: 560px) { .log a { grid-template-columns: minmax(0, 1fr); } }
+  .rss { margin: 28px 0 0; }
+</style>

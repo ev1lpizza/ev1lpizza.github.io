@@ -8,57 +8,41 @@ const { game, isNew = false } = Astro.props;
 const g = game.data;
 const useCanvas = !g.cover || !!g.attract;
 ---
-<a class="card" class:list={{ featured: g.featured }} href={url(`games/${game.id}/`)} data-genre={g.genre} aria-label={`${g.title}: ${g.tagline}`}>
-  <div class="screen scan" style={`view-transition-name: screen-${game.id}`}>
+<a class="card" href={url(`games/${game.id}/`)} aria-label={`${g.title}: ${g.tagline}`}>
+  <div class="screen" style={`view-transition-name: screen-${game.id}`}>
     {useCanvas
       ? <canvas data-attract={g.attract ?? 'default'} aria-hidden="true"></canvas>
       : g.cover && <Image src={g.cover} alt="" widths={[400, 800]} sizes="(min-width: 1040px) 33vw, 100vw" />}
-    <div class="badge">
-      {isNew && <span class="new">New</span>}
-      <span class="live">● Playable</span>
-      {!g.mobile && <span>Desktop</span>}
-    </div>
-    <span class="insert" aria-hidden="true">PRESS START ▶</span>
+    {isNew && <span class="new">New</span>}
+    <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" /></svg></span>
   </div>
-  <div class="meta">
-    <div class="meta-top"><h3>{g.title}</h3><span class="yr">{g.released.getUTCFullYear()}</span></div>
-    <p>{g.tagline}</p>
-    <div class="tags">{g.tags.map((t) => <span>{t}</span>)}</div>
-  </div>
+  <h3>{g.title}</h3>
 </a>
 
 <style>
-  .card {
-    --rx: 0deg; --ry: 0deg; --gx: 50%; --gy: 50%;
-    position: relative; display: flex; flex-direction: column; min-width: 0;
-    border-radius: var(--r); background: var(--crust); border: 1px solid var(--char);
-    transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
-    transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .25s, box-shadow .35s;
-    text-decoration: none; overflow: hidden;
-  }
-  .card:hover, .card:focus-visible { border-color: color-mix(in oklab, var(--cheese) 60%, var(--char)); box-shadow: 0 30px 60px -30px #000, 0 0 0 1px color-mix(in oklab, var(--cheese) 30%, transparent); }
-  .card::after {
-    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-    background: radial-gradient(500px circle at var(--gx) var(--gy), color-mix(in oklab, var(--cheese) 16%, transparent), transparent 45%);
-    opacity: 0; transition: opacity .3s;
-  }
-  .card:hover::after { opacity: 1; }
-  .screen { position: relative; aspect-ratio: 16 / 10; background: #0b0405; overflow: hidden; border-bottom: 1px solid var(--char); flex: 1 1 auto; min-height: 0; }
-  .featured .screen { aspect-ratio: auto; min-height: 260px; }
-  @media (max-width: 1039px) { .featured .screen { aspect-ratio: 16 / 10; } }
-  .screen canvas, .screen img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
+  .card { display: grid; gap: 14px; min-width: 0; text-decoration: none; }
+  .screen { position: relative; aspect-ratio: 4 / 3; border-radius: var(--r); background: var(--plate); overflow: hidden; transition: transform .4s var(--ease-out); }
+  .card:hover .screen, .card:focus-visible .screen { transform: translateY(-4px); }
+  .card:active .screen { transform: scale(.985); }
+  .screen canvas, .screen :global(img) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
   .screen canvas { image-rendering: pixelated; }
-  .badge { position: absolute; top: 12px; left: 12px; z-index: 2; display: inline-flex; gap: 6px; }
-  .badge span { font-family: var(--f-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; background: rgba(10,4,5,.75); color: var(--cream); }
-  .badge .live { color: var(--basil); }
-  .badge .new { background: var(--cheese); color: var(--sauce); font-weight: 800; }
-  .meta { padding: 16px 18px 18px; display: grid; gap: 8px; }
-  .meta-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  h3 { font-size: 21px; margin: 0; line-height: 1.05; }
-  .featured h3 { font-size: clamp(26px, 3vw, 36px); }
-  .yr { font-family: var(--f-mono); font-size: 11px; color: var(--ash); white-space: nowrap; }
-  .meta p { margin: 0; color: var(--ash); font-size: 14.5px; }
-  .insert { position: absolute; right: 14px; bottom: 14px; z-index: 2; font-family: var(--f-mono); font-size: 10px; letter-spacing: .1em; padding: 6px 10px; border-radius: 6px; background: var(--cheese); color: var(--sauce); font-weight: 800; transform: translateY(8px); opacity: 0; transition: .25s; }
-  .card:hover .insert, .card:focus-visible .insert { transform: none; opacity: 1; }
-  @media (hover: none) { .insert { opacity: 1; transform: none; } }
+  .new { position: absolute; top: 14px; left: 14px; padding: 5px 12px; border-radius: 999px; background: var(--cheese); color: var(--ground); font-size: 13px; font-weight: 700; }
+  .play { position: absolute; right: 14px; bottom: 14px; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--cheese); color: var(--ground); opacity: 0; transform: scale(.9); transition: opacity .25s, transform .25s var(--ease-out); }
+  .play svg { width: 22px; height: 22px; }
+  .card:hover .play, .card:focus-visible .play { opacity: 1; transform: none; }
+  @media (hover: none) { .play { opacity: 1; transform: none; } }
+  h3 { margin: 0; font-size: clamp(20px, 2vw, 26px); }
 </style>
+
+<script>
+  import { mountAttract } from '../scripts/attract';
+  document.querySelectorAll<HTMLAnchorElement>('.card').forEach((card) => {
+    let hover = false;
+    const cv = card.querySelector<HTMLCanvasElement>('canvas[data-attract]');
+    if (cv) mountAttract(cv, cv.dataset.attract!, () => hover, 0.5);
+    card.addEventListener('pointerenter', () => (hover = true));
+    card.addEventListener('pointerleave', () => (hover = false));
+    card.addEventListener('focus', () => (hover = true));
+    card.addEventListener('blur', () => (hover = false));
+  });
+</script>

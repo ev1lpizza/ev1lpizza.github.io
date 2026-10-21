@@ -1,7 +1,7 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
 import Prose from '../../layouts/Prose.astro';
-import { fmtDate, url } from '../../data/site';
+import { url } from '../../data/site';
 
 export async function getStaticPaths() {
   const posts = await getCollection('devlog', ({ data }) => !data.draft);
@@ -11,10 +11,10 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 const game = post.data.game ? await getEntry(post.data.game) : undefined;
 ---
-<Prose title={post.data.title} description={post.data.summary} kicker={`Devlog · ${fmtDate(post.data.date)}`}>
+<Prose title={post.data.title} description={post.data.summary} date={post.data.date}>
   <Content />
   {game && !game.data.draft && (
-    <p><a class="btn primary" href={url(`games/${game.id}/`)} style="color:var(--sauce);text-decoration:none">▶ Play {game.data.title}</a></p>
+    <p><a class="btn primary" href={url(`games/${game.id}/`)} style="color:var(--ground);text-decoration:none">Play {game.data.title}</a></p>
   )}
-  <p><a href={url('#devlog')}>← All devlog posts</a></p>
+  <p><a href={url('devlog/')}>← Devlog</a></p>
 </Prose>

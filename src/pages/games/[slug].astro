@@ -31,98 +31,83 @@ const ld = {
 <Base title={g.title} description={`${g.tagline} Play ${g.title} free in your browser.`}>
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   <div class="wrap game">
-    <a class="back mono" href={url('#rack')}>← Back to the rack</a>
-    <div class="layout">
-      <div class="stage scan" id="stage" style={`view-transition-name: screen-${game.id}; aspect-ratio: ${g.aspect}`}>
-        {g.cover && !g.attract
-          ? <Image src={g.cover} alt="" widths={[800, 1400]} sizes="(min-width: 980px) 70vw, 100vw" class="poster-art" />
-          : <canvas data-attract={g.attract ?? 'default'} aria-hidden="true"></canvas>}
-        <div class="poster" id="poster">
-          <button class="btn primary start" id="startBtn" data-src={src}>
-            <span aria-hidden="true">▶</span> Press start
-          </button>
-          {g.warnings.length > 0 && (
-            <p class="warn mono" role="note"><strong>Heads up:</strong> {g.warnings.join(' · ')}</p>
-          )}
-          {!g.mobile && <p class="warn mono" role="note">Best on a computer with a keyboard.</p>}
-        </div>
+    <div class="stage" id="stage" style={`view-transition-name: screen-${game.id}; aspect-ratio: ${g.aspect}`}>
+      {g.cover && !g.attract
+        ? <Image src={g.cover} alt="" widths={[800, 1400]} sizes="(min-width: 980px) 90vw, 100vw" class="poster-art" />
+        : <canvas data-attract={g.attract ?? 'default'} aria-hidden="true"></canvas>}
+      <div class="poster" id="poster">
+        <button class="btn primary start" id="startBtn" data-src={src}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" /></svg> Play
+        </button>
+        {g.warnings.length > 0 && <p class="warn" role="note">{g.warnings.join(' · ')}</p>}
+        {!g.mobile && <p class="warn" role="note">Best with a keyboard</p>}
       </div>
-      <aside class="info" aria-labelledby="game-title">
-        <span class="mono kicker">{g.genre} · {g.released.getUTCFullYear()}</span>
+    </div>
+
+    <div class="info">
+      <div class="title">
         <h1 id="game-title">{g.title}</h1>
         <p class="tagline">{g.tagline}</p>
-        <dl class="kv">
-          <dt class="mono">Controls</dt><dd>{g.controls}</dd>
-          <dt class="mono">Length</dt><dd>{g.length}</dd>
-          <dt class="mono">Built with</dt><dd>{g.engine}</dd>
-          <dt class="mono">Released</dt><dd>{fmtDate(g.released)}</dd>
-          {g.updated && <><dt class="mono">Updated</dt><dd>{fmtDate(g.updated)}</dd></>}
-        </dl>
-        <div class="row">
-          <button class="btn sm" id="fsBtn"><span aria-hidden="true">⛶</span> Fullscreen</button>
-          <button class="btn sm" id="copyBtn">Copy link</button>
-          {g.links.map((l) => <a class="btn sm" href={l.url} rel="noopener">{l.label} ↗</a>)}
-        </div>
-        <div class="tags">{g.tags.map((t) => <span>{t}</span>)}</div>
-      </aside>
+      </div>
+      <div class="row">
+        <button class="btn sm" id="fsBtn">Fullscreen</button>
+        <button class="btn sm" id="copyBtn">Copy link</button>
+        {g.links.map((l) => <a class="btn sm" href={l.url} rel="noopener">{l.label} ↗</a>)}
+      </div>
     </div>
 
     <div class="below">
-      <article class="prose">
-        <h2>About the game</h2>
-        <Content />
-      </article>
+      <dl class="kv">
+        <div><dt>Controls</dt><dd>{g.controls}</dd></div>
+        <div><dt>Length</dt><dd>{g.length}</dd></div>
+        <div><dt>Built with</dt><dd>{g.engine}</dd></div>
+        <div><dt>Released</dt><dd>{fmtDate(g.released)}</dd></div>
+        {g.updated && <div><dt>Updated</dt><dd>{fmtDate(g.updated)}</dd></div>}
+      </dl>
+      <article class="prose"><Content /></article>
       {posts.length > 0 && (
-        <aside>
-          <h2>Devlog</h2>
-          <ul class="mini-log">
-            {posts.map((p) => <li><a href={url(`devlog/${p.id}/`)}><time class="mono">{fmtDate(p.data.date)}</time><strong>{p.data.title}</strong></a></li>)}
-          </ul>
-        </aside>
+        <ul class="mini-log" aria-label="Devlog posts">
+          {posts.map((p) => <li><a href={url(`devlog/${p.id}/`)}><time>{fmtDate(p.data.date)}</time><strong>{p.data.title}</strong></a></li>)}
+        </ul>
       )}
     </div>
   </div>
 </Base>
 
 <style>
-  .game { padding-block: 28px 80px; }
-  .back { display: inline-block; color: var(--ash); text-decoration: none; margin-bottom: 18px; }
-  .back:hover { color: var(--cream); }
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; border: 1px solid var(--char); border-radius: 20px; background: var(--crust); overflow: hidden; }
-  @media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-  .stage { position: relative; background: #0b0405; max-width: 100%; }
+  .game { padding-block: 12px clamp(64px, 9vw, 120px); }
+  .stage { position: relative; background: #000; max-width: 100%; border-radius: var(--r); overflow: hidden; }
   .stage canvas, .stage .poster-art, .stage :global(iframe) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border: 0; object-fit: cover; }
   .stage :global(iframe) { z-index: 2; background: #000; }
-  .stage.playing::after { display: none; }
-  .stage:fullscreen { aspect-ratio: auto !important; }
+  .stage:fullscreen { aspect-ratio: auto !important; border-radius: 0; }
   @media (max-width: 640px) { .stage { aspect-ratio: 3 / 4 !important; } }
-  .poster { position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; background: radial-gradient(closest-side, rgba(10,4,5,.55), transparent); text-align: center; }
-  .start { height: 56px; font-size: 17px; padding: 0 28px; }
-  .warn { margin: 0; padding: 8px 12px; border-radius: 8px; background: rgba(10,4,5,.82); color: var(--cream); max-width: 46ch; line-height: 1.6; }
-  .warn strong { color: var(--cheese); }
-  .info { padding: 26px; display: grid; gap: 16px; align-content: start; min-width: 0; }
-  h1 { font-size: clamp(30px, 3.4vw, 42px); line-height: 1; margin: 0; }
-  .tagline { margin: 0; color: color-mix(in oklab, var(--cream) 85%, var(--ash)); }
-  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 0; font-size: 14.5px; }
-  .kv dt { color: var(--ash); padding-top: 3px; }
-  .kv dd { margin: 0; }
+  .poster { position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; background: rgba(0, 0, 0, .35); text-align: center; }
+  .start { min-height: 60px; font-size: 18px; padding: 0 32px; }
+  .warn { margin: 0; padding: 8px 14px; border-radius: 999px; background: rgba(0, 0, 0, .75); font-size: 14px; }
+  .info { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 20px 32px; margin-top: clamp(24px, 4vw, 40px); }
+  h1 { font-size: clamp(40px, 6vw, 80px); margin: 0; }
+  .tagline { margin: 12px 0 0; font-size: 19px; color: var(--ash); }
   .row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .below { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: clamp(28px, 5vw, 64px); margin-top: 56px; }
-  @media (max-width: 980px) { .below { grid-template-columns: minmax(0, 1fr); } }
-  .below h2 { font-size: 26px; margin: 0 0 14px; }
-  .prose { max-width: 65ch; color: color-mix(in oklab, var(--cream) 90%, var(--ash)); }
-  .prose :global(h3) { font-size: 18px; margin: 28px 0 8px; }
+  .below { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); margin-top: clamp(40px, 6vw, 72px); }
+  @media (max-width: 860px) { .below { grid-template-columns: minmax(0, 1fr); } }
+  .kv { display: grid; gap: 16px; margin: 0; align-content: start; }
+  .kv dt { color: var(--ash); font-size: 14px; }
+  .kv dd { margin: 2px 0 0; }
+  .prose { max-width: 66ch; }
+  .prose :global(> :first-child) { margin-top: 0; }
+  .prose :global(h2), .prose :global(h3) { font-family: var(--f-body); font-weight: 700; font-size: 20px; margin: 28px 0 8px; letter-spacing: 0; }
   .prose :global(a) { color: var(--cheese); }
-  .prose :global(code) { font-family: var(--f-mono); font-size: .88em; color: var(--cheese); }
-  .mini-log { list-style: none; margin: 0; padding: 0; }
-  .mini-log a { display: grid; gap: 2px; padding: 12px 0; border-top: 1px solid var(--char); text-decoration: none; }
-  .mini-log a:hover strong { color: var(--cheese); }
-  .mini-log time { color: var(--ash); }
+  .prose :global(code) { font-family: ui-monospace, Menlo, monospace; font-size: .88em; color: var(--cheese); }
+  .mini-log { grid-column: 2; list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  @media (max-width: 860px) { .mini-log { grid-column: 1; } }
+  .mini-log a { display: grid; gap: 2px; padding: 14px 18px; border-radius: 14px; background: var(--plate); text-decoration: none; }
+  .mini-log a:hover { background: var(--plate-2); }
+  .mini-log time { color: var(--ash); font-size: 14px; }
 </style>
 
 <script>
   import { mountAttract } from '../../scripts/attract';
-  import { blip, toast } from '../../scripts/core';
+  import { toast } from '../../scripts/core';
 
   const stage = document.getElementById('stage')!;
   const cv = stage.querySelector<HTMLCanvasElement>('canvas[data-attract]');
@@ -139,8 +124,6 @@ const ld = {
     stage.classList.add('playing');
     document.getElementById('poster')?.remove();
     cv?.remove();
-    blip(392, 0.09);
-    setTimeout(() => blip(523, 0.12), 90);
     f.addEventListener('load', () => f.focus());
   });
 
@@ -151,7 +134,7 @@ const ld = {
   document.getElementById('copyBtn')?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(location.href.split('#')[0]);
-      toast('LINK COPIED');
+      toast('Link copied');
     } catch {
       toast(location.href.split('#')[0]);
     }
