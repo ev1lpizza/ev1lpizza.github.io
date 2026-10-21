@@ -7,11 +7,11 @@ const { count, newest } = Astro.props;
   <canvas id="lava" aria-hidden="true"></canvas>
   <canvas id="eat" aria-hidden="true"></canvas>
   <div class="wrap">
-    <span class="eyebrow mono">Browser games by ev1lpizza · {count} on the rack</span>
+    <span class="eyebrow mono">Browser games by ev1lpizza · {count > 0 ? `${count} on the rack` : 'first cartridges in the oven'}</span>
     <h1 id="headline"><span class="line">Games</span> <span class="line">served</span> <span class="line hot">extra hot</span></h1>
     <p class="lede">Small, strange, fast-loading web games. No installs, no accounts. Pick a cartridge and it boots right here in the browser.</p>
     <div class="ctas">
-      <a class="btn primary" href="#rack">Browse the rack <span aria-hidden="true">↓</span></a>
+      <a class="btn primary" href="#rack">{count > 0 ? 'Browse the rack' : 'See what’s cooking'} <span aria-hidden="true">↓</span></a>
       {newest && <a class="btn" href={url(`games/${newest.slug}/`)}><span aria-hidden="true">▶</span> Play the newest: {newest.title}</a>}
     </div>
     <p class="hint mono" aria-hidden="true"><i>●</i> Your cursor is hungry. Chase the pepperoni.</p>

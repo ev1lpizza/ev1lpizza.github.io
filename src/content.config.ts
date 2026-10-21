@@ -15,7 +15,7 @@ const games = defineCollection({
       controls: z.string(),
       length: z.string(),
       engine: z.string(),
-      /** Path under public/ (e.g. /play/dough-dodge/index.html) or a full https URL. */
+      /** Path under public/ (e.g. /play/my-game/index.html) or a full https URL. */
       embed: z.string(),
       aspect: z.string().default('16 / 10'),
       cover: image().optional(),

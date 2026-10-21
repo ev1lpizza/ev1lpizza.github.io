@@ -1,12 +1,12 @@
 ---
 title: The arcade is open
 date: 2026-10-21
-summary: A new home for my web games, with two cartridges on the rack.
+summary: A new home for my web games. The first cartridges are on their way.
 ---
 
 This is the new home for the games I make for the browser. Everything here loads fast, needs no install and doesn't ask you to sign up for anything.
 
-Two games are on the rack to start: **Dough Dodge**, a one-screen arcade dodger, and **Oven Mind**, a calm tile-flipping puzzle. More are in the oven.
+The rack is empty for now, but the first games are in the oven. Grab the RSS feed to hear when they land.
 
 A few things to try while you're here:
 
