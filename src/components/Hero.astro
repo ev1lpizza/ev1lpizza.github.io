@@ -1,0 +1,205 @@
+---
+import { url } from '../data/site';
+interface Props { count: number; newest?: { title: string; slug: string } }
+const { count, newest } = Astro.props;
+---
+<section class="hero" aria-labelledby="headline">
+  <canvas id="lava" aria-hidden="true"></canvas>
+  <canvas id="eat" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <span class="eyebrow mono">Browser games by ev1lpizza · {count} on the rack</span>
+    <h1 id="headline"><span class="line">Games</span> <span class="line">served</span> <span class="line hot">extra hot</span></h1>
+    <p class="lede">Small, strange, fast-loading web games. No installs, no accounts. Pick a cartridge and it boots right here in the browser.</p>
+    <div class="ctas">
+      <a class="btn primary" href="#rack">Browse the rack <span aria-hidden="true">↓</span></a>
+      {newest && <a class="btn" href={url(`games/${newest.slug}/`)}><span aria-hidden="true">▶</span> Play the newest: {newest.title}</a>}
+    </div>
+    <p class="hint mono" aria-hidden="true"><i>●</i> Your cursor is hungry. Chase the pepperoni.</p>
+  </div>
+</section>
+
+<style>
+  .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--char); isolation: isolate; }
+  .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #lava { z-index: -2; background: radial-gradient(120% 90% at 70% 30%, #5a1712, var(--sauce) 70%); }
+  :global(:root.evil) #lava { background: radial-gradient(120% 90% at 70% 30%, #3a1466, var(--sauce) 70%); }
+  #eat { z-index: -1; cursor: none; }
+  .wrap { position: relative; padding-block: clamp(56px, 10vw, 120px) clamp(40px, 7vw, 80px); pointer-events: none; }
+  .wrap a { pointer-events: auto; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; color: var(--cheese); }
+  .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--basil); box-shadow: 0 0 12px var(--basil); flex: none; }
+  h1 { font-size: clamp(44px, 9.4vw, 132px); line-height: .88; letter-spacing: -.01em; margin: 18px 0 22px; max-width: 11ch; }
+  h1 .line { display: block; overflow: hidden; padding-bottom: .04em; }
+  h1 :global(.ch) { display: inline-block; }
+  h1 .hot { color: var(--cheese); }
+  .lede { max-width: 46ch; font-size: clamp(16px, 1.6vw, 19px); color: color-mix(in oklab, var(--cream) 86%, var(--ash)); margin: 0 0 30px; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .hint { margin-top: 34px; display: flex; align-items: center; gap: 10px; color: var(--ash); }
+  .hint i { font-style: normal; color: var(--cheese); }
+  @media (hover: none) { .hint { display: none; } }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+  import { addScore, blip, cssVar, isCalm, isEvil } from '../scripts/core';
+
+  const hero = document.querySelector<HTMLElement>('.hero')!;
+  const lava = document.getElementById('lava') as HTMLCanvasElement;
+  const eat = document.getElementById('eat') as HTMLCanvasElement;
+  const mouse = { x: 0.7, y: 0.6, tx: 0.7, ty: 0.6 };
+  let heroVisible = true;
+  new IntersectionObserver(([e]) => (heroVisible = e.isIntersecting)).observe(hero);
+
+  /* ---------- Molten-cheese shader ---------- */
+  (function initGL() {
+    const gl = lava.getContext('webgl', { antialias: false, powerPreference: 'low-power' });
+    if (!gl) return;
+    const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+    const fs = `precision mediump float;
+      uniform vec2 r;uniform float t;uniform vec2 m;uniform vec3 c1;uniform vec3 c2;uniform vec3 c3;
+      float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+      float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+        return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+      float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+      void main(){
+        vec2 uv=gl_FragCoord.xy/r; vec2 p=(gl_FragCoord.xy-.5*r)/r.y; vec2 mp=(m*r-.5*r)/r.y;
+        float d=length(p-mp);
+        vec2 q=vec2(fbm(p*1.6+t*.04),fbm(p*1.6+vec2(5.2,1.3)-t*.05));
+        vec2 w=q+.35*(mp-p)*exp(-d*2.2);
+        float f=fbm(p*1.4+2.2*w+t*.03);
+        vec3 col=mix(c1,c2,smoothstep(.25,.62,f));
+        col=mix(col,c3,smoothstep(.62,.78,f)*.95);
+        col+=c3*.22*exp(-d*3.5);
+        col*=.55+.6*smoothstep(1.25,.15,length(uv-vec2(.72,.55)));
+        col*=mix(.55,1.,smoothstep(0.,.55,uv.x));
+        col+=(h(gl_FragCoord.xy+t)-.5)*.035;
+        gl_FragColor=vec4(col,1.);
+      }`;
+    const sh = (type: number, src: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    const pr = gl.createProgram()!;
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(pr, 'p');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const U = (k: string) => gl.getUniformLocation(pr, k);
+    const uR = U('r'), uT = U('t'), uM = U('m'), u1 = U('c1'), u2 = U('c2'), u3 = U('c3');
+    const hex = (s: string) => [0, 2, 4].map((i) => parseInt(s.replace('#', '').slice(i, i + 2), 16) / 255);
+    const t0 = performance.now();
+    let drawn = false, frozenT = 20;
+    const frame = (now: number) => {
+      const calm = isCalm();
+      if ((heroVisible && !calm) || !drawn) {
+        const scale = 0.45, w = Math.round(lava.clientWidth * scale), h = Math.round(lava.clientHeight * scale);
+        if (lava.width !== w || lava.height !== h) { lava.width = w; lava.height = h; }
+        gl.viewport(0, 0, w, h);
+        mouse.x += (mouse.tx - mouse.x) * 0.05;
+        mouse.y += (mouse.ty - mouse.y) * 0.05;
+        const evil = isEvil();
+        if (!calm) frozenT = (now - t0) / 1000;
+        gl.uniform2f(uR, w, h);
+        gl.uniform1f(uT, frozenT);
+        gl.uniform2f(uM, mouse.x, mouse.y);
+        gl.uniform3fv(u1, hex(evil ? '#0c0714' : '#170809'));
+        gl.uniform3fv(u2, hex(evil ? '#3a1466' : '#6b1a14'));
+        gl.uniform3fv(u3, hex(evil ? '#b8ff3d' : '#ffb52e'));
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        drawn = true;
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+    const redraw = () => (drawn = false);
+    addEventListener('resize', redraw);
+    addEventListener('ev1l:theme', redraw);
+    addEventListener('ev1l:calm', redraw);
+  })();
+
+  /* ---------- Eat-the-pepperoni mini game ---------- */
+  const ec = eat.getContext('2d')!;
+  type Pep = { x: number; y: number; r: number; vx: number; vy: number; ph: number };
+  const peps: Pep[] = [];
+  const bits: { x: number; y: number; vx: number; vy: number; l: number }[] = [];
+  const ptr = { x: -999, y: -999, on: false, mouth: 0 };
+  const spawn = (w: number, h: number) => peps.push({ x: Math.random() * w, y: Math.random() * h, r: 9 + Math.random() * 10, vx: (Math.random() - 0.5) * 24, vy: (Math.random() - 0.5) * 24, ph: Math.random() * 7 });
+  hero.addEventListener('pointermove', (e) => {
+    const r = hero.getBoundingClientRect();
+    ptr.x = e.clientX - r.left;
+    ptr.y = e.clientY - r.top;
+    ptr.on = e.pointerType === 'mouse' || e.pointerType === 'pen';
+    mouse.tx = ptr.x / r.width;
+    mouse.ty = 1 - ptr.y / r.height;
+  });
+  hero.addEventListener('pointerleave', () => (ptr.on = false));
+  let last = performance.now();
+  const loop = (now: number) => {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const calm = isCalm();
+    const dpr = Math.min(2, devicePixelRatio || 1), w = hero.clientWidth, h = hero.clientHeight;
+    if (eat.width !== Math.round(w * dpr) || eat.height !== Math.round(h * dpr)) { eat.width = Math.round(w * dpr); eat.height = Math.round(h * dpr); }
+    ec.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ec.clearRect(0, 0, w, h);
+    if (heroVisible) {
+      while (peps.length < Math.max(6, Math.round(w / 110))) spawn(w, h);
+      const pepCol = cssVar('--pepperoni'), cheese = cssVar('--cheese');
+      for (let i = peps.length - 1; i >= 0; i--) {
+        const p = peps[i];
+        if (!calm) {
+          p.x += p.vx * dt; p.y += p.vy * dt; p.ph += dt;
+          if (ptr.on) {
+            const dx = p.x - ptr.x, dy = p.y - ptr.y, d = Math.hypot(dx, dy);
+            if (d < 140 && d > 0) { p.x += (dx / d) * 40 * dt; p.y += (dy / d) * 40 * dt; }
+          }
+          if (p.x < -20) p.x = w + 20; if (p.x > w + 20) p.x = -20;
+          if (p.y < -20) p.y = h + 20; if (p.y > h + 20) p.y = -20;
+        }
+        if (ptr.on && Math.hypot(p.x - ptr.x, p.y - ptr.y) < p.r + 16) {
+          if (!calm) for (let k = 0; k < 10; k++) bits.push({ x: p.x, y: p.y, vx: (Math.random() - 0.5) * 260, vy: (Math.random() - 0.5) * 260, l: 0.5 });
+          peps.splice(i, 1);
+          addScore(10);
+          ptr.mouth = 1;
+          blip(220 + Math.random() * 120, 0.08, 'square', 0.04);
+          continue;
+        }
+        ec.save(); ec.translate(p.x, p.y); ec.rotate(p.ph * 0.3);
+        ec.globalAlpha = 0.92; ec.fillStyle = pepCol; ec.beginPath(); ec.arc(0, 0, p.r, 0, 7); ec.fill();
+        ec.fillStyle = 'rgba(0,0,0,.25)';
+        for (const [a, b] of [[0.3, -0.2], [-0.35, 0.1], [0.05, 0.4]]) { ec.beginPath(); ec.arc(a * p.r, b * p.r, p.r * 0.16, 0, 7); ec.fill(); }
+        ec.restore();
+      }
+      for (let i = bits.length - 1; i >= 0; i--) {
+        const b = bits[i];
+        b.x += b.vx * dt; b.y += b.vy * dt; b.l -= dt;
+        if (b.l <= 0) { bits.splice(i, 1); continue; }
+        ec.globalAlpha = b.l * 2; ec.fillStyle = cheese; ec.fillRect(b.x, b.y, 4, 4);
+      }
+      ec.globalAlpha = 1;
+      if (ptr.on) {
+        ptr.mouth = Math.max(0, ptr.mouth - dt * 4);
+        const open = 0.35 + (calm ? 0 : Math.sin(now / 90) * 0.1) + ptr.mouth * 0.4;
+        ec.fillStyle = cheese; ec.beginPath(); ec.moveTo(ptr.x, ptr.y); ec.arc(ptr.x, ptr.y, 18, open, Math.PI * 2 - open); ec.closePath(); ec.fill();
+        ec.fillStyle = cssVar('--sauce'); ec.beginPath(); ec.arc(ptr.x + 3, ptr.y - 9, 2.6, 0, 7); ec.fill();
+      }
+    }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+
+  /* ---------- Headline intro ---------- */
+  document.querySelectorAll<HTMLElement>('#headline .line').forEach((l) => {
+    l.setAttribute('aria-hidden', 'true');
+    l.innerHTML = [...(l.textContent ?? '')].map((ch) => `<span class="ch">${ch === ' ' ? '&nbsp;' : ch}</span>`).join('');
+  });
+  const h1 = document.getElementById('headline')!;
+  h1.setAttribute('aria-label', 'Games served extra hot');
+  if (!isCalm()) {
+    gsap.from('#headline .ch', { yPercent: 110, rotate: 8, duration: 0.9, ease: 'expo.out', stagger: 0.025, delay: 0.1 });
+    gsap.from('.hero .eyebrow, .hero .lede, .hero .ctas, .hero .hint', { y: 16, opacity: 0, duration: 0.7, ease: 'power3.out', stagger: 0.08, delay: 0.45 });
+  }
+</script>

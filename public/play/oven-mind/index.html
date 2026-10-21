@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oven Mind</title>
+<meta name="robots" content="noindex">
+<style>
+  @font-face { font-family: "Bungee"; src: url("../../fonts/bungee.woff2") format("woff2"); font-display: swap; }
+  :root { --sauce: #140a0a; --crust: #24100f; --char: #4a2420; --cheese: #ffc23d; --cream: #f7e8d3; --ash: #bf9f93; --basil: #8fe3a5; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: radial-gradient(80% 80% at 50% 40%, #2a1210, var(--sauce)); color: var(--cream); font: 13px/1.4 ui-monospace, Menlo, monospace; overflow: hidden; user-select: none; -webkit-user-select: none; }
+  body { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+  header, footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; flex-wrap: wrap; }
+  h1 { font: 18px Bungee, Impact, sans-serif; margin: 0; color: var(--cheese); letter-spacing: .02em; }
+  .stats { display: flex; gap: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--ash); }
+  .stats b { color: var(--cream); font-variant-numeric: tabular-nums; }
+  canvas { width: 100%; height: 100%; display: block; touch-action: manipulation; outline: none; }
+  canvas:focus-visible { outline: 2px solid var(--cheese); outline-offset: -2px; }
+  button { font: inherit; color: var(--cream); background: var(--crust); border: 1px solid var(--char); border-radius: 999px; height: 32px; padding: 0 14px; cursor: pointer; letter-spacing: .04em; white-space: nowrap; }
+  button:hover:not(:disabled) { border-color: var(--ash); }
+  button:disabled { opacity: .4; cursor: default; }
+  button:focus-visible { outline: 2px solid var(--cheese); outline-offset: 2px; }
+  .group { display: flex; gap: 8px; }
+  .msg { color: var(--basil); min-height: 1.4em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Oven Mind</h1>
+  <div class="stats" aria-live="polite"><span>Level <b id="lv">1</b>/40</span><span>Moves <b id="mv">0</b></span><span>Par <b id="par">0</b></span></div>
+</header>
+<canvas id="c" tabindex="0" role="application" aria-label="Oven Mind puzzle board. Arrow keys move, Enter or Space flips a tile."></canvas>
+<footer>
+  <span class="msg" id="msg" aria-live="polite"></span>
+  <div class="group">
+    <button id="prev" aria-label="Previous level">◀ Prev</button>
+    <button id="restart">Restart (R)</button>
+    <button id="next" aria-label="Next level">Next ▶</button>
+  </div>
+</footer>
+<script>
+(() => {
+  const LEVELS = 40;
+  const cv = document.getElementById('c'), c = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = id => document.getElementById(id);
+  const load = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  const report = (points) => { try { if (parent !== window) parent.postMessage({ type: 'ev1l:score', points }, location.origin); } catch {} };
+  let ac = null;
+  const blip = (f, d = .07, type = 'triangle', vol = .04) => {
+    try {
+      if (!load('ev1l:sound', false)) return;
+      ac = ac || new AudioContext();
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, ac.currentTime); o.frequency.exponentialRampToValueAtTime(f * 1.5, ac.currentTime + d);
+      g.gain.setValueAtTime(vol, ac.currentTime); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d);
+      o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d);
+    } catch {}
+  };
+
+  const progress = Object.assign({ unlocked: 1, level: 1, best: {} }, load('oven-mind:progress', {}));
+  const sizeFor = L => L <= 5 ? 3 : L <= 15 ? 4 : L <= 30 ? 5 : 6;
+  function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  let N, board, flip, moves, par, level, solved, cur = { x: 0, y: 0 };
+  function press(b, n, x, y) {
+    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const i = x + dx, j = y + dy;
+      if (i >= 0 && j >= 0 && i < n && j < n) b[j * n + i] ^= 1;
+    }
+  }
+  function makeLevel(L) {
+    const n = sizeFor(L), rand = mulberry(L * 9973 + 17);
+    const taps = Math.min(n * n - 1, 2 + Math.floor(L * .5));
+    for (let attempt = 0; ; attempt++) {
+      const b = new Array(n * n).fill(1);
+      const cells = [...Array(n * n).keys()];
+      for (let k = 0; k < taps; k++) {
+        const pick = cells.splice(Math.floor(rand() * cells.length), 1)[0];
+        press(b, n, pick % n, Math.floor(pick / n));
+      }
+      if (b.some(v => !v) || attempt > 20) return { n, b, taps };
+    }
+  }
+  function start(L) {
+    level = Math.max(1, Math.min(LEVELS, L));
+    const lv = makeLevel(level);
+    N = lv.n; board = lv.b; par = lv.taps; moves = 0; solved = false;
+    flip = new Array(N * N).fill(1);
+    cur = { x: Math.floor(N / 2), y: Math.floor(N / 2) };
+    progress.level = level; save('oven-mind:progress', progress);
+    $('msg').textContent = progress.best[level] ? `Best: ${progress.best[level]} moves` : '';
+    ui();
+  }
+  function ui() {
+    $('lv').textContent = level; $('mv').textContent = moves; $('par').textContent = par;
+    $('prev').disabled = level <= 1;
+    $('next').disabled = level >= LEVELS || level >= progress.unlocked;
+  }
+  function act(x, y) {
+    if (solved) { if (level < LEVELS) start(level + 1); return; }
+    press(board, N, x, y);
+    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const i = x + dx, j = y + dy;
+      if (i >= 0 && j >= 0 && i < N && j < N) flip[j * N + i] = 0;
+    }
+    moves++; blip(330 + (x + y) * 40);
+    if (board.every(v => v)) {
+      solved = true;
+      const first = !progress.best[level];
+      progress.best[level] = Math.min(progress.best[level] || Infinity, moves);
+      progress.unlocked = Math.max(progress.unlocked, Math.min(LEVELS, level + 1));
+      save('oven-mind:progress', progress);
+      const underPar = moves <= par;
+      if (first) report(underPar ? 100 : 50);
+      $('msg').textContent = level === LEVELS ? 'The whole oven is glowing. You beat every level!' : `${underPar ? 'At or under par!' : 'Cleared!'} ${moves} moves. Click or press Enter for the next level.`;
+      [523, 659, 784].forEach((f, i) => setTimeout(() => blip(f, .12), i * 90));
+    }
+    ui();
+  }
+
+  let geo = { ox: 0, oy: 0, s: 0 };
+  function cellAt(e) {
+    const r = cv.getBoundingClientRect(), dpr = cv.width / r.width;
+    const x = Math.floor(((e.clientX - r.left) * dpr - geo.ox) / geo.s), y = Math.floor(((e.clientY - r.top) * dpr - geo.oy) / geo.s);
+    return x >= 0 && y >= 0 && x < N && y < N ? { x, y } : null;
+  }
+  cv.addEventListener('pointerdown', e => { cv.focus(); const p = cellAt(e); if (solved) return act(0, 0); if (p) { cur = p; act(p.x, p.y); } });
+  addEventListener('keydown', e => {
+    const k = e.key;
+    if (k === 'ArrowLeft') cur.x = Math.max(0, cur.x - 1);
+    else if (k === 'ArrowRight') cur.x = Math.min(N - 1, cur.x + 1);
+    else if (k === 'ArrowUp') cur.y = Math.max(0, cur.y - 1);
+    else if (k === 'ArrowDown') cur.y = Math.min(N - 1, cur.y + 1);
+    else if ((k === 'Enter' || k === ' ') && document.activeElement === cv) act(cur.x, cur.y);
+    else if (k.toLowerCase() === 'r') return start(level);
+    else return;
+    e.preventDefault();
+  });
+  $('restart').onclick = () => start(level);
+  $('prev').onclick = () => start(level - 1);
+  $('next').onclick = () => start(level + 1);
+
+  let prev = performance.now();
+  function frame(now) {
+    const dt = Math.min(.05, (now - prev) / 1000); prev = now;
+    const dpr = Math.min(2, devicePixelRatio || 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    c.clearRect(0, 0, w, h);
+    const s = Math.floor(Math.min(w, h) * .9 / N), ox = (w - s * N) / 2, oy = (h - s * N) / 2;
+    geo = { ox, oy, s };
+    const t = now / 1000;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const k = j * N + i, on = board[k];
+      flip[k] = reduce ? 1 : Math.min(1, flip[k] + dt * 6);
+      const f = flip[k], sy = Math.max(.06, Math.abs(Math.cos((1 - f) * Math.PI)));
+      const cx = ox + i * s + s / 2, cy = oy + j * s + s / 2, pad = s * .07;
+      c.save(); c.translate(cx, cy); c.scale(1, sy);
+      const showOn = f < .5 ? !on : on;
+      if (showOn) {
+        const pulse = solved && !reduce ? .85 + .15 * Math.sin(t * 6 - (i + j) * .6) : 1;
+        c.shadowColor = 'rgba(255,194,61,.55)'; c.shadowBlur = s * .35 * pulse;
+        c.fillStyle = '#ffc23d';
+      } else { c.shadowBlur = 0; c.fillStyle = '#3a1a18'; }
+      const r = s * .14, x0 = -s / 2 + pad, y0 = -s / 2 + pad, sz = s - pad * 2;
+      c.beginPath(); c.roundRect(x0, y0, sz, sz, r); c.fill();
+      c.shadowBlur = 0;
+      if (!showOn) { c.strokeStyle = '#4a2420'; c.lineWidth = Math.max(1, s * .02); c.stroke(); }
+      c.restore();
+    }
+    if (document.activeElement === cv && !solved) {
+      c.strokeStyle = '#f7e8d3'; c.lineWidth = Math.max(2, s * .04);
+      c.beginPath(); c.roundRect(ox + cur.x * s + 2, oy + cur.y * s + 2, s - 4, s - 4, s * .16); c.stroke();
+    }
+    requestAnimationFrame(frame);
+  }
+  start(Math.min(progress.level || 1, progress.unlocked));
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

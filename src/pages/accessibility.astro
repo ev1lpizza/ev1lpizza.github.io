@@ -1,0 +1,27 @@
+---
+import Prose from '../layouts/Prose.astro';
+import { SITE } from '../data/site';
+---
+<Prose title="Accessibility" kicker="Everyone gets a slice" updated={SITE.legalUpdated} description={`How ${SITE.name} works for keyboard, screen reader and motion-sensitive players.`}>
+  <p>I want as many people as possible to be able to use this site and play the games. The website pages aim to meet the <a href="https://www.w3.org/TR/WCAG22/" rel="noopener">Web Content Accessibility Guidelines (WCAG) 2.2</a> at level AA.</p>
+
+  <h2>What the site does</h2>
+  <ul>
+    <li><strong>Keyboard:</strong> every link and control can be reached with Tab and shows a visible focus ring. A "Skip to content" link appears on the first Tab press. Search opens with Ctrl+K, ⌘K or the / key.</li>
+    <li><strong>Motion:</strong> if your device is set to reduce motion, the site respects that automatically. You can also press the ◐ calm button in the header at any time to pause the animated background, tilting cards and page transitions. The site remembers your choice.</li>
+    <li><strong>Sound:</strong> sound effects are off until you turn them on with the ♪ button.</li>
+    <li><strong>Contrast:</strong> text colors are chosen to meet WCAG AA contrast against their backgrounds.</li>
+    <li><strong>Screen readers:</strong> pages use real headings, landmarks and labels. Decorative animations are hidden from assistive technology.</li>
+    <li><strong>Zoom:</strong> layouts reflow down to phone width and work with browser zoom up to 400%.</li>
+  </ul>
+
+  <h2>Known limits</h2>
+  <ul>
+    <li>Most games draw to a canvas, so screen readers can't read what's happening inside them. Each game's page lists its controls and what it's about in plain text.</li>
+    <li>Some games need quick reactions or a mouse. Each game's page lists its controls and says when a keyboard and computer work best.</li>
+    <li>Games with flashing or fast-changing visuals show a warning before they start.</li>
+  </ul>
+
+  <h2>Feedback</h2>
+  <p>If something on the site doesn't work for you, I'd like to know. Please {SITE.contactLabel} at <a href={SITE.contactUrl}>{SITE.contactUrl.replace('https://', '')}</a> and describe what happened, the page, and your browser or assistive technology if you're comfortable sharing it.</p>
+</Prose>

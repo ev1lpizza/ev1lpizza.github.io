@@ -1,0 +1,57 @@
+---
+import Prose from '../layouts/Prose.astro';
+import { SITE, url } from '../data/site';
+---
+<Prose title="Privacy policy" kicker="The fine print" updated={SITE.legalUpdated} description={`How ${SITE.name} handles your data: no cookies, no analytics, no accounts.`}>
+  <div class="summary">
+    <strong>The short version</strong>
+    <ul>
+      <li>No accounts, no cookies, no analytics, no ads and no third-party trackers.</li>
+      <li>Fonts, scripts and games are all served from this site. Your browser doesn't contact Google Fonts or any other outside service when you visit.</li>
+      <li>High scores and settings are saved only in your own browser. They never reach me.</li>
+      <li>The host, GitHub Pages, logs visitor IP addresses for security. I can't see or control those logs.</li>
+    </ul>
+  </div>
+
+  <h2>Who runs this site</h2>
+  <p>{SITE.name} ({SITE.handle}) is a personal, non-commercial website where I publish small web games. In this policy, "I" and "me" means the person who runs the site. If you have a question about privacy, {SITE.contactLabel}: <a href={SITE.contactUrl}>{SITE.contactUrl.replace('https://', '')}</a>.</p>
+
+  <h2>What I collect</h2>
+  <p>Nothing. The site has no sign-up, no contact form, no comments, no newsletter and no analytics. I don't receive your name, email address, IP address, location or any other personal information from you.</p>
+
+  <h2>What the host collects</h2>
+  <p>This site is hosted on GitHub Pages. GitHub says that when anyone visits a GitHub Pages site, "the visitor's IP address is logged and stored for security purposes," whether or not the visitor is signed in to GitHub. GitHub handles that data under the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub General Privacy Statement</a>. I don't have access to these logs. Questions or requests about them should go to GitHub.</p>
+
+  <h2>What's stored in your browser</h2>
+  <p>The site uses your browser's local storage (not cookies) to remember a few things between visits. This data stays on your device. It is never sent to me or to anyone else, and the site works without it.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>What it remembers</th></tr></thead>
+      <tbody>
+        <tr><td><code>ev1l:score</code></td><td>The total score shown in the header</td></tr>
+        <tr><td><code>ev1l:sound</code></td><td>Whether sound effects are on</td></tr>
+        <tr><td><code>ev1l:calm</code></td><td>Whether calm mode (paused animation) is on</td></tr>
+        <tr><td><code>ev1l:evil</code></td><td>Whether "evil mode" is on. Cleared when you close the tab.</td></tr>
+        <tr><td><code>dough-dodge:best</code>, <code>oven-mind:progress</code></td><td>Each game's best score or level progress</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Because these entries only make features you use work and never leave your device, the site doesn't need a cookie banner. To delete them, clear this site's data in your browser settings. In most browsers, that's under Settings, Privacy, then site data.</p>
+
+  <h2>The games</h2>
+  <p>Games run entirely in your browser and are served from this site. They don't have online features such as accounts, multiplayer or online leaderboards. If a future game adds an online feature, its page will say so, and I'll update this policy before it goes live.</p>
+
+  <h2>Links to other sites</h2>
+  <p>Some pages link to other sites, such as GitHub or itch.io. Those sites have their own privacy policies. This site sends a limited referrer (only the site's address, not the page) when you follow a link.</p>
+
+  <h2>Children</h2>
+  <p>The games are suitable for a general audience. Since the site doesn't collect personal information from anyone, it doesn't knowingly collect personal information from children under 13 (or the equivalent minimum age where you live).</p>
+
+  <h2>Your rights</h2>
+  <p>Privacy laws such as the GDPR, the UK GDPR and the California Consumer Privacy Act give you rights over personal data held about you, including the right to access or delete it. I don't hold any personal data about visitors, so there's nothing for me to hand over or delete. I don't sell or share personal information. For the security logs kept by GitHub, contact GitHub through its privacy statement.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If anything here changes, I'll update this page and the "Last updated" date at the top. The full history of this page is public in the <a href={SITE.repo}>site's GitHub repository</a>.</p>
+
+  <p>See also the <a href={url('terms/')}>terms of use</a> and the <a href={url('accessibility/')}>accessibility statement</a>.</p>
+</Prose>
