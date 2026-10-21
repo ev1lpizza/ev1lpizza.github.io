@@ -33,7 +33,7 @@ const ticker = [
         <div>
           <span class="mono kicker">The rack</span>
           <h2 id="rack-h">Pick a cartridge</h2>
-          <p>Hover to boot the attract screen. Click to play in your browser.</p>
+          <p>{games.length > 0 ? 'Hover to boot the attract screen. Click to play in your browser.' : 'Every game here plays right in your browser. Nothing on the rack just yet.'}</p>
         </div>
         {genres.length > 2 && (
           <div class="filters" role="group" aria-label="Filter by genre">
@@ -45,14 +45,26 @@ const ticker = [
           </div>
         )}
       </div>
-      <div class="rack" id="rackGrid">
-        {games.map((g) => <GameCard game={g} isNew={g.id === newest?.id} />)}
-        <div class="cooking" data-genre="*">
-          <span class="mono kicker">In the oven</span>
-          <p>The next cartridge is still baking. Follow the devlog or the RSS feed to hear when it's out.</p>
-          <a class="btn sm" href={url('rss.xml')}>Get the RSS feed</a>
+      {games.length > 0 ? (
+        <div class="rack" id="rackGrid">
+          {games.map((g) => <GameCard game={g} isNew={g.id === newest?.id} />)}
+          <div class="cooking" data-genre="*">
+            <span class="mono kicker">In the oven</span>
+            <p>The next cartridge is still baking. Follow the devlog or the RSS feed to hear when it's out.</p>
+            <a class="btn sm" href={url('rss.xml')}>Get the RSS feed</a>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div class="empty">
+          <div class="empty-screen scan"><canvas data-attract="default" aria-hidden="true"></canvas><span class="mono">Insert cartridge</span></div>
+          <div class="empty-copy">
+            <span class="mono kicker">Preheating</span>
+            <h3>The first games are still in the oven</h3>
+            <p>New cartridges land here as soon as they're out. Follow the devlog or the RSS feed to hear when the first one is ready.</p>
+            <a class="btn primary sm" href={url('rss.xml')}>Get the RSS feed</a>
+          </div>
+        </div>
+      )}
     </div>
   </section>
 
@@ -94,6 +106,15 @@ const ticker = [
   @media (min-width: 1040px) { .rack { grid-template-columns: repeat(3, 1fr); } .rack :global(.card.featured) { grid-column: span 2; grid-row: span 2; } }
   .cooking { border: 1px dashed var(--char); border-radius: var(--r); padding: 24px; display: grid; gap: 12px; align-content: center; justify-items: start; min-height: 220px; background: repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in oklab, var(--crust) 60%, transparent) 14px 28px); }
   .cooking p { margin: 0; color: var(--ash); max-width: 36ch; }
+  .empty { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); border: 1px solid var(--char); border-radius: 20px; background: var(--crust); overflow: hidden; }
+  @media (max-width: 860px) { .empty { grid-template-columns: minmax(0, 1fr); } }
+  .empty-screen { position: relative; aspect-ratio: 16 / 10; background: #0b0405; }
+  .empty-screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .empty-screen span { position: absolute; inset: auto 0 22px; z-index: 2; text-align: center; color: var(--cheese); font-size: 13px; animation: blink 1.2s steps(2, start) infinite; }
+  @keyframes blink { to { visibility: hidden; } }
+  .empty-copy { padding: clamp(24px, 4vw, 44px); display: grid; gap: 14px; align-content: center; justify-items: start; }
+  .empty-copy h3 { font-size: clamp(24px, 2.6vw, 34px); line-height: 1; margin: 0; }
+  .empty-copy p { margin: 0; color: var(--ash); max-width: 40ch; }
 
   section#devlog { padding-top: 0; }
   .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(28px, 5vw, 72px); }
@@ -114,6 +135,9 @@ const ticker = [
   import { mountAttract } from '../scripts/attract';
   import { blip, isCalm } from '../scripts/core';
   gsap.registerPlugin(Flip);
+
+  const empty = document.querySelector<HTMLCanvasElement>('.empty-screen canvas');
+  if (empty) mountAttract(empty, 'default', () => true, 0.5);
 
   const cards = [...document.querySelectorAll<HTMLAnchorElement>('#rackGrid .card')];
   for (const card of cards) {
