@@ -1,0 +1,288 @@
+---
+// A flat, generative pizza drawn at build time from a seeded random source.
+// The static SVG is the no-JS and reduced-motion version. With motion allowed,
+// a canvas takes over: the slices assemble, follow the pointer, spin on drag
+// and drift apart as the page scrolls.
+interface Props {
+  slices?: number;
+  /** Leave one slice out (used on the 404 page). */
+  missing?: number;
+  interactive?: boolean;
+  seed?: number;
+}
+const { slices = 8, missing, interactive = true, seed = 7 } = Astro.props;
+
+const R = 500;
+const rand = (() => {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+})();
+const f = (n: number) => Math.round(n * 10) / 10;
+
+/** Closed, smooth, slightly irregular blob around (cx, cy). */
+function blob(cx: number, cy: number, r: number, wobble: number, points = 48) {
+  const ph = [rand() * 6.28, rand() * 6.28, rand() * 6.28];
+  const k = [2 + Math.floor(rand() * 3), 5 + Math.floor(rand() * 3), 9 + Math.floor(rand() * 4)];
+  const pts: [number, number][] = [];
+  for (let i = 0; i < points; i++) {
+    const a = (i / points) * Math.PI * 2;
+    const rr = r * (1 + wobble * (0.55 * Math.sin(k[0] * a + ph[0]) + 0.3 * Math.sin(k[1] * a + ph[1]) + 0.15 * Math.sin(k[2] * a + ph[2])));
+    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+  }
+  let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
+  for (let i = 0; i < points; i++) {
+    const p0 = pts[(i - 1 + points) % points], p1 = pts[i], p2 = pts[(i + 1) % points], p3 = pts[(i + 2) % points];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += `C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${f(p2[0])} ${f(p2[1])}`;
+  }
+  return d + 'Z';
+}
+
+const parts: string[] = [];
+const add = (cls: string, d: string) => parts.push(`<path class="${cls}" d="${d}"/>`);
+const circle = (cls: string, x: number, y: number, r: number) => parts.push(`<circle class="${cls}" cx="${f(x)}" cy="${f(y)}" r="${f(r)}"/>`);
+
+// Crust, bake line, sauce, cheese
+circle('c-crust', 0, 0, R);
+for (let i = 0; i < 70; i++) {
+  const a = rand() * Math.PI * 2, rr = 474 + rand() * 20;
+  parts.push(`<ellipse class="c-char" cx="${f(Math.cos(a) * rr)}" cy="${f(Math.sin(a) * rr)}" rx="${f(3 + rand() * 9)}" ry="${f(2 + rand() * 3)}" transform="rotate(${f((a * 180) / Math.PI + 90)} ${f(Math.cos(a) * rr)} ${f(Math.sin(a) * rr)})"/>`);
+}
+circle('c-char', 0, 0, 466);
+add('c-sauce', blob(0, 0, 452, 0.012, 64));
+add('c-cheese', blob(0, 0, 424, 0.03, 64));
+
+// Melt highlights and sauce peeking through
+for (let i = 0; i < 9; i++) {
+  const a = rand() * Math.PI * 2, rr = rand() * 330;
+  add('c-melt', blob(Math.cos(a) * rr, Math.sin(a) * rr, 24 + rand() * 40, 0.22, 20));
+}
+for (let i = 0; i < 16; i++) {
+  const a = rand() * Math.PI * 2, rr = 60 + rand() * 340;
+  add('c-sauce', blob(Math.cos(a) * rr, Math.sin(a) * rr, 7 + rand() * 13, 0.3, 14));
+}
+
+// Pepperoni, spaced out
+const peps: { x: number; y: number; r: number }[] = [];
+for (let tries = 0; tries < 2000 && peps.length < 15; tries++) {
+  const r = 40 + rand() * 16, a = rand() * Math.PI * 2, rr = Math.sqrt(rand()) * (395 - r);
+  const x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+  if (peps.every((p) => Math.hypot(p.x - x, p.y - y) > p.r + r + 22)) peps.push({ x, y, r });
+}
+for (const p of peps) {
+  circle('c-pep', p.x, p.y, p.r);
+  add('c-pep-hi', blob(p.x - p.r * 0.08, p.y - p.r * 0.1, p.r * 0.74, 0.08, 18));
+  for (let k = 0; k < 4; k++) {
+    const a = rand() * 6.28, rr = rand() * p.r * 0.55;
+    circle('c-pep', p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr, 2.5 + rand() * 4);
+  }
+}
+
+// Basil
+for (let i = 0; i < 7; i++) {
+  const a = rand() * Math.PI * 2, rr = 80 + rand() * 300, x = Math.cos(a) * rr, y = Math.sin(a) * rr;
+  if (peps.some((p) => Math.hypot(p.x - x, p.y - y) < p.r + 20)) continue;
+  const L = 26 + rand() * 12, W = 11 + rand() * 4, rot = f(rand() * 360);
+  parts.push(`<g transform="translate(${f(x)} ${f(y)}) rotate(${rot})"><path class="c-basil" d="M${f(-L)} 0Q0 ${f(-W * 2)} ${f(L)} 0Q0 ${f(W * 2)} ${f(-L)} 0Z"/><path class="c-basil-hi" d="M${f(-L * 0.7)} 0Q0 ${f(-W * 0.5)} ${f(L * 0.8)} 0Q0 ${f(-W * 0.2)} ${f(-L * 0.7)} 0Z"/></g>`);
+}
+const art = parts.join('');
+
+// Slices
+const step = (Math.PI * 2) / slices;
+const start = -Math.PI / 2;
+const wedge = (i: number, r = R + 6) => {
+  const a0 = start + i * step, a1 = a0 + step;
+  return `M0 0L${f(Math.cos(a0) * r)} ${f(Math.sin(a0) * r)}A${r} ${r} 0 0 1 ${f(Math.cos(a1) * r)} ${f(Math.sin(a1) * r)}Z`;
+};
+const GAP = 7;
+const list = Array.from({ length: slices }, (_, i) => {
+  const mid = start + (i + 0.5) * step;
+  return { i, d: wedge(i), dx: f(Math.cos(mid) * GAP), dy: f(Math.sin(mid) * GAP) };
+}).filter((s) => s.i !== missing);
+---
+<div class="pie" data-pie={interactive ? 'live' : 'static'} data-slices={slices} data-missing={missing ?? ''}>
+  <svg class="pie-svg" viewBox="-560 -560 1120 1120" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="pie-art" viewBox="-500 -500 1000 1000" overflow="visible"><Fragment set:html={art} /></symbol>
+      {list.map((s) => <clipPath id={`pie-w${s.i}`}><path d={s.d} /></clipPath>)}
+    </defs>
+    {list.map((s) => (
+      <g transform={`translate(${s.dx} ${s.dy})`} clip-path={`url(#pie-w${s.i})`}>
+        <use href="#pie-art" x="-500" y="-500" width="1000" height="1000" />
+      </g>
+    ))}
+  </svg>
+  {interactive && <canvas class="pie-canvas" aria-hidden="true"></canvas>}
+</div>
+
+<style is:global>
+  .pie { position: relative; aspect-ratio: 1; width: 100%; }
+  .pie-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+  /* The canvas reaches past the box so pulled and scattered slices are not cut off. */
+  .pie-canvas { position: absolute; inset: -12.5%; width: 125%; height: 125%; display: block; }
+  .pie-canvas { opacity: 0; touch-action: pan-y; cursor: grab; }
+  .pie-canvas.dragging { cursor: grabbing; }
+  .pie.ready .pie-canvas { opacity: 1; }
+  .pie.ready .pie-svg, :root.motion .pie[data-pie="live"]:not(.fallback) .pie-svg { opacity: 0; }
+  .c-crust { fill: var(--p-crust); }
+  .c-char { fill: var(--p-char); }
+  .c-sauce { fill: var(--p-sauce); }
+  .c-cheese { fill: var(--p-cheese); }
+  .c-melt { fill: var(--p-melt); }
+  .c-pep { fill: var(--p-pep); }
+  .c-pep-hi { fill: var(--p-pep-hi); }
+  .c-basil { fill: var(--p-basil); }
+  .c-basil-hi { fill: var(--p-basil-hi); }
+</style>
+
+<script>
+  const CLASSES = ['crust', 'char', 'sauce', 'cheese', 'melt', 'pep', 'pep-hi', 'basil', 'basil-hi'];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+  function mount(root: HTMLElement) {
+    const canvas = root.querySelector<HTMLCanvasElement>('.pie-canvas');
+    const symbol = document.getElementById('pie-art');
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !symbol || !ctx || reduce.matches) return void root.classList.add('fallback');
+
+    const N = Number(root.dataset.slices) || 8;
+    const STEP = (Math.PI * 2) / N, START = -Math.PI / 2, GAP = 7, PULL = 58, VIEW = 1400;
+    const art = document.createElement('canvas');
+    const actx = art.getContext('2d')!;
+    let artReady = false, artSize = 0;
+
+    // Rasterise the SVG once (with colours resolved from the current theme), then blit wedges.
+    function rasterise() {
+      const cs = getComputedStyle(document.documentElement);
+      const css = CLASSES.map((c) => `.c-${c}{fill:${cs.getPropertyValue(`--p-${c}`).trim()}}`).join('');
+      const size = Math.min(2400, Math.ceil(canvas!.clientWidth * Math.min(2, devicePixelRatio || 1) * (1000 / VIEW)));
+      if (size < 16) return;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-500 -500 1000 1000" width="${size}" height="${size}"><style>${css}</style>${symbol!.innerHTML}</svg>`;
+      const img = new Image();
+      img.onload = () => {
+        art.width = art.height = size;
+        actx.clearRect(0, 0, size, size);
+        actx.drawImage(img, 0, 0, size, size);
+        artReady = true;
+        artSize = size;
+        root.classList.add('ready');
+      };
+      img.onerror = () => root.classList.add('fallback');
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    const off = Array.from({ length: N }, () => ({ o: 0, v: 0 }));
+    const state = { rot: -0.7, vel: 0, drag: false, lastA: 0, lastT: 0, hover: -1, t: 0 };
+    const AUTO = 0.045; // rad/s idle spin
+
+    const center = () => {
+      const r = canvas!.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, k: r.width / VIEW };
+    };
+    const scrollP = () => Math.min(1, Math.max(0, scrollY / Math.max(1, innerHeight * 0.9)));
+    const scrollRot = () => scrollP() * 1.1;
+
+    addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse' || state.drag) { if (!state.drag) state.hover = -1; return; }
+      const c = center(), dx = (e.clientX - c.x) / c.k, dy = (e.clientY - c.y) / c.k, d = Math.hypot(dx, dy);
+      if (d > 620 || d < 40) { state.hover = -1; return; }
+      let a = Math.atan2(dy, dx) - state.rot - scrollRot() - START;
+      a = ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      state.hover = Math.floor(a / STEP) % N;
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => (state.hover = -1));
+
+    const angleAt = (e: PointerEvent) => { const c = center(); return Math.atan2(e.clientY - c.y, e.clientX - c.x); };
+    canvas.addEventListener('pointerdown', (e) => {
+      const c = center();
+      if (Math.hypot(e.clientX - c.x, e.clientY - c.y) / c.k > 520) return;
+      state.drag = true; state.hover = -1; state.lastA = angleAt(e); state.lastT = performance.now(); state.vel = 0;
+      canvas.setPointerCapture(e.pointerId);
+      canvas.classList.add('dragging');
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!state.drag) return;
+      const a = angleAt(e), now = performance.now();
+      let da = a - state.lastA;
+      if (da > Math.PI) da -= Math.PI * 2;
+      if (da < -Math.PI) da += Math.PI * 2;
+      state.rot += da;
+      const dt = Math.max(0.001, (now - state.lastT) / 1000);
+      state.vel = state.vel * 0.6 + (da / dt) * 0.4;
+      state.lastA = a; state.lastT = now;
+    });
+    const release = () => { state.drag = false; canvas.classList.remove('dragging'); state.vel = Math.max(-14, Math.min(14, state.vel)); };
+    canvas.addEventListener('pointerup', release);
+    canvas.addEventListener('pointercancel', release);
+
+    let visible = true;
+    new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(root);
+    let lastW = 0;
+    new ResizeObserver(() => {
+      const w = canvas.clientWidth;
+      if (!artSize || w * (devicePixelRatio || 1) > artSize * 1.15 || Math.abs(w - lastW) > 200) { lastW = w; rasterise(); }
+    }).observe(canvas);
+    addEventListener('ev1l:theme', rasterise);
+
+    const expo = (x: number) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+    let last = performance.now();
+    function frame(now: number) {
+      requestAnimationFrame(frame);
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (!visible || document.hidden || !artReady) return;
+      state.t += dt;
+
+      if (!state.drag) {
+        state.vel += (AUTO - state.vel) * (1 - Math.exp(-dt * 1.4));
+        state.rot += state.vel * dt;
+      }
+      const p = scrollP();
+      for (let i = 0; i < N; i++) {
+        const target = GAP + p * 130 + (i === state.hover ? PULL : 0);
+        const s = off[i];
+        s.v += (190 * (target - s.o) - 20 * s.v) * dt;
+        s.o += s.v * dt;
+      }
+
+      const w = Math.round(canvas!.clientWidth * Math.min(2, devicePixelRatio || 1));
+      if (canvas!.width !== w || canvas!.height !== w) { canvas!.width = canvas!.height = w; }
+      const k = w / VIEW;
+      ctx!.setTransform(1, 0, 0, 1, 0, 0);
+      ctx!.clearRect(0, 0, w, w);
+      ctx!.translate(w / 2, w / 2);
+      ctx!.scale(k, k);
+      // Intro: the pie turns into place as the slices land.
+      const intro = expo(Math.min(1, state.t / 1.3));
+      ctx!.rotate(state.rot + scrollRot() - (1 - intro) * 0.9);
+      const missing = root.dataset.missing === '' ? -1 : Number(root.dataset.missing);
+      for (let i = 0; i < N; i++) {
+        if (i === missing) continue;
+        const li = Math.min(1, Math.max(0, (state.t - 0.05 - i * 0.06) / 1.1));
+        const e = expo(li);
+        if (li <= 0) continue;
+        const a0 = START + i * STEP, mid = a0 + STEP / 2, o = off[i].o + (1 - e) * 340;
+        ctx!.save();
+        ctx!.globalAlpha = Math.min(1, li * 3);
+        ctx!.translate(Math.cos(mid) * o, Math.sin(mid) * o);
+        ctx!.beginPath();
+        ctx!.moveTo(0, 0);
+        ctx!.arc(0, 0, 506, a0, a0 + STEP);
+        ctx!.closePath();
+        ctx!.clip();
+        ctx!.drawImage(art, -500, -500, 1000, 1000);
+        ctx!.restore();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  document.querySelectorAll<HTMLElement>('.pie[data-pie="live"]').forEach(mount);
+</script>

@@ -20,4 +20,4 @@ links:
 draft: true
 ---
 
-Write a few paragraphs about the game here. This shows under "About the game" on its page.
+Write a few paragraphs about the game here. This shows on the game’s page, under the play area.
