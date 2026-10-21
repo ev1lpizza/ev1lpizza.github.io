@@ -1,0 +1,39 @@
+---
+import Base from './Base.astro';
+import { fmtDate } from '../data/site';
+
+interface Props { title: string; description: string; kicker?: string; updated?: Date }
+const { title, description, kicker, updated } = Astro.props;
+---
+<Base title={title} description={description}>
+  <article class="wrap doc">
+    <header>
+      {kicker && <span class="mono kicker">{kicker}</span>}
+      <h1>{title}</h1>
+      {updated && <p class="mono updated">Last updated {fmtDate(updated, { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+    </header>
+    <div class="prose"><slot /></div>
+  </article>
+</Base>
+
+<style>
+  .doc { padding-block: clamp(40px, 7vw, 80px) 88px; }
+  header { margin-bottom: 36px; max-width: 65ch; }
+  h1 { font-size: clamp(34px, 5vw, 60px); line-height: .95; margin: 10px 0 14px; }
+  .updated { color: var(--ash); margin: 0; }
+  .prose { max-width: 68ch; color: color-mix(in oklab, var(--cream) 90%, var(--ash)); }
+  .prose :global(h2) { font-size: clamp(20px, 2.4vw, 26px); margin: 44px 0 10px; line-height: 1.1; }
+  .prose :global(h3) { font-family: var(--f-body); font-weight: 700; font-size: 17px; margin: 24px 0 6px; }
+  .prose :global(p), .prose :global(li) { line-height: 1.7; }
+  .prose :global(ul) { padding-left: 1.2em; }
+  .prose :global(li + li) { margin-top: 6px; }
+  .prose :global(a) { color: var(--cheese); text-underline-offset: 3px; }
+  .prose :global(code) { font-family: var(--f-mono); font-size: .86em; color: var(--cheese); overflow-wrap: anywhere; }
+  .prose :global(.summary) { border: 1px solid var(--char); background: var(--crust); border-radius: var(--r); padding: 18px 22px; margin: 0 0 8px; }
+  .prose :global(.summary ul) { margin: 8px 0 0; }
+  .prose :global(.table-wrap) { overflow-x: auto; margin: 14px 0; border: 1px solid var(--char); border-radius: 10px; }
+  .prose :global(table) { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  .prose :global(th), .prose :global(td) { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--char); vertical-align: top; }
+  .prose :global(tr:last-child td) { border-bottom: 0; }
+  .prose :global(th) { font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ash); font-weight: 400; }
+</style>

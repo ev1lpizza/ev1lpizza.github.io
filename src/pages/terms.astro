@@ -1,0 +1,48 @@
+---
+import Prose from '../layouts/Prose.astro';
+import { SITE, url } from '../data/site';
+---
+<Prose title="Terms of use" kicker="The fine print" updated={SITE.legalUpdated} description={`The rules for playing games on ${SITE.name}.`}>
+  <div class="summary">
+    <strong>The short version</strong>
+    <ul>
+      <li>The games are free to play here, in your browser.</li>
+      <li>Please don't re-upload or sell the games or their art without asking.</li>
+      <li>The games are provided as they are. Take breaks, and read the health warning below.</li>
+    </ul>
+  </div>
+
+  <p>These terms apply when you use {SITE.name} ({SITE.handle}), including the games published on it. By using the site, you agree to them. If you don't agree, please don't use the site.</p>
+
+  <h2>Playing the games</h2>
+  <p>You can play every game on this site for free, for personal and non-commercial use. You're welcome to stream or record gameplay, post videos of it, and share links to any page on the site. Credit and a link back are appreciated.</p>
+
+  <h2>What you can't do</h2>
+  <ul>
+    <li>Copy, re-host, mirror or embed the games on another website or app without written permission.</li>
+    <li>Sell the games, their art, music or code, or include them in a paid product.</li>
+    <li>Try to break, overload or attack the site, or use it to break the law.</li>
+  </ul>
+
+  <h2>Who owns what</h2>
+  <p>The games, artwork, music, writing and the {SITE.name} name and logo are © {SITE.handle} unless a game's page says otherwise. The source code of the website itself (not the games) is published in the <a href={SITE.repo}>site's GitHub repository</a> under the license stated there. Fonts and libraries used on the site belong to their authors and are listed on the <a href={url('credits/')}>credits page</a>.</p>
+
+  <h2>Health warning: photosensitive seizures</h2>
+  <p>A very small percentage of people may have a seizure when exposed to certain visual images, including flashing lights or patterns that can appear in video games. Even people with no history of seizures or epilepsy may have an undiagnosed condition. If you or anyone in your family has an epileptic condition, consult a doctor before playing. Stop playing right away and see a doctor if you experience dizziness, altered vision, eye or muscle twitches, loss of awareness, disorientation, any involuntary movement or convulsions.</p>
+  <p>Games with flashing or fast-changing visuals carry a warning on their page. You can turn on calm mode (the ◐ button in the header) to pause the site's own background animation. Take a 10 to 15 minute break every hour.</p>
+
+  <h2>No warranty</h2>
+  <p>The site and games are provided "as is" and "as available," without warranties of any kind, express or implied. That includes any warranty that they will work without errors or interruption, or work on your device. Saved scores and progress live in your browser and can be lost if you clear your browser data.</p>
+
+  <h2>Limitation of liability</h2>
+  <p>To the fullest extent the law allows, {SITE.handle} isn't liable for any indirect, incidental or consequential damages, or for any loss of data, that comes from using or being unable to use the site or the games. Some places don't allow these limits, so they may not fully apply to you. Nothing in these terms limits rights you have under consumer protection laws that can't be waived.</p>
+
+  <h2>Links to other sites</h2>
+  <p>Links to other websites are for convenience. I'm not responsible for their content or how they handle your data.</p>
+
+  <h2>Changes</h2>
+  <p>I may update these terms. When I do, I'll change the "Last updated" date at the top. Continuing to use the site after a change means you accept the updated terms.</p>
+
+  <h2>Contact</h2>
+  <p>For questions about these terms, or to ask permission for something listed above, {SITE.contactLabel}: <a href={SITE.contactUrl}>{SITE.contactUrl.replace('https://', '')}</a>.</p>
+</Prose>

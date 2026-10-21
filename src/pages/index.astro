@@ -1,0 +1,160 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import GameCard from '../components/GameCard.astro';
+import { fmtDate, url } from '../data/site';
+
+const games = (await getCollection('games', ({ data }) => !data.draft)).sort(
+  (a, b) => Number(b.data.featured) - Number(a.data.featured) || +b.data.released - +a.data.released,
+);
+const newest = [...games].sort((a, b) => +b.data.released - +a.data.released)[0];
+const posts = (await getCollection('devlog', ({ data }) => !data.draft)).sort((a, b) => +b.data.date - +a.data.date);
+const genres = ['All', ...new Set(games.map((g) => g.data.genre))];
+const ticker = [
+  ...(newest ? [`Now serving: ${newest.data.title}`] : []),
+  ...posts.slice(0, 4).map((p) => p.data.title),
+];
+---
+<Base>
+  <Hero count={games.length} newest={newest && { title: newest.data.title, slug: newest.id }} />
+
+  {ticker.length > 0 && (
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        {[...ticker, ...ticker, ...ticker, ...ticker].map((t) => <span>{t}</span>)}
+      </div>
+    </div>
+  )}
+
+  <section class="block" id="rack" aria-labelledby="rack-h">
+    <div class="wrap">
+      <div class="head">
+        <div>
+          <span class="mono kicker">The rack</span>
+          <h2 id="rack-h">Pick a cartridge</h2>
+          <p>Hover to boot the attract screen. Click to play in your browser.</p>
+        </div>
+        {genres.length > 2 && (
+          <div class="filters" role="group" aria-label="Filter by genre">
+            {genres.map((t, i) => (
+              <button type="button" data-filter={t} aria-pressed={i === 0 ? 'true' : 'false'}>
+                {t}<sup>{t === 'All' ? games.length : games.filter((g) => g.data.genre === t).length}</sup>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div class="rack" id="rackGrid">
+        {games.map((g) => <GameCard game={g} isNew={g.id === newest?.id} />)}
+        <div class="cooking" data-genre="*">
+          <span class="mono kicker">In the oven</span>
+          <p>The next cartridge is still baking. Follow the devlog or the RSS feed to hear when it's out.</p>
+          <a class="btn sm" href={url('rss.xml')}>Get the RSS feed</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="devlog" aria-labelledby="log-h">
+    <div class="wrap split">
+      <div>
+        <span class="mono kicker">Devlog</span>
+        <h2 id="log-h">Fresh from the oven</h2>
+        <p class="sub">Short notes on what changed and why.</p>
+      </div>
+      <ol class="log">
+        {posts.map((p) => (
+          <li>
+            <time datetime={p.data.date.toISOString().slice(0, 10)}>{fmtDate(p.data.date, { month: 'short', day: 'numeric' })}</time>
+            <a href={url(`devlog/${p.id}/`)}><strong>{p.data.title}</strong><span>{p.data.summary}</span></a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .ticker { border-bottom: 1px solid var(--char); background: var(--cheese); color: var(--sauce); overflow: hidden; }
+  .ticker-track { display: flex; width: max-content; animation: tick 60s linear infinite; }
+  .ticker span { font-family: var(--f-display); font-size: 15px; padding: 10px 0; white-space: nowrap; }
+  .ticker span::after { content: "✦"; margin: 0 22px; }
+  @keyframes tick { to { transform: translateX(-50%); } }
+
+  .head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px 32px; margin-bottom: 28px; }
+  .head p, .sub { margin: 10px 0 0; color: var(--ash); max-width: 52ch; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; }
+  .filters button { height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--char); background: transparent; font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ash); }
+  .filters button:hover { color: var(--cream); }
+  .filters button[aria-pressed="true"] { background: var(--cream); color: var(--sauce); border-color: var(--cream); }
+  .filters sup { font-size: 9px; margin-left: 4px; opacity: .7; }
+
+  .rack { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 18px; grid-auto-flow: dense; }
+  @media (min-width: 1040px) { .rack { grid-template-columns: repeat(3, 1fr); } .rack :global(.card.featured) { grid-column: span 2; grid-row: span 2; } }
+  .cooking { border: 1px dashed var(--char); border-radius: var(--r); padding: 24px; display: grid; gap: 12px; align-content: center; justify-items: start; min-height: 220px; background: repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in oklab, var(--crust) 60%, transparent) 14px 28px); }
+  .cooking p { margin: 0; color: var(--ash); max-width: 36ch; }
+
+  section#devlog { padding-top: 0; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(28px, 5vw, 72px); }
+  @media (max-width: 860px) { .split { grid-template-columns: minmax(0, 1fr); } }
+  .log { list-style: none; margin: 0; padding: 0; display: grid; }
+  .log li { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; padding: 18px 0; border-top: 1px solid var(--char); }
+  .log li:last-child { border-bottom: 1px solid var(--char); }
+  .log time { font-family: var(--f-mono); font-size: 11px; color: var(--ash); padding-top: 4px; font-variant-numeric: tabular-nums; text-transform: uppercase; }
+  .log a { text-decoration: none; }
+  .log a:hover strong { color: var(--cheese); }
+  .log strong { display: block; font-size: 17px; margin-bottom: 2px; }
+  .log span { color: var(--ash); font-size: 14.5px; }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+  import { Flip } from 'gsap/Flip';
+  import { mountAttract } from '../scripts/attract';
+  import { blip, isCalm } from '../scripts/core';
+  gsap.registerPlugin(Flip);
+
+  const cards = [...document.querySelectorAll<HTMLAnchorElement>('#rackGrid .card')];
+  for (const card of cards) {
+    let hover = false;
+    const cv = card.querySelector<HTMLCanvasElement>('canvas[data-attract]');
+    const featured = card.classList.contains('featured');
+    if (cv) mountAttract(cv, cv.dataset.attract!, () => hover || featured, featured ? 0.6 : 0.5);
+    card.addEventListener('pointerenter', () => { hover = true; blip(300, 0.04, 'triangle', 0.03); });
+    card.addEventListener('focus', () => (hover = true));
+    card.addEventListener('blur', () => (hover = false));
+    card.addEventListener('pointerleave', () => {
+      hover = false;
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+    });
+    card.addEventListener('pointermove', (e) => {
+      if (isCalm() || e.pointerType !== 'mouse') return;
+      const r = card.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      card.style.setProperty('--ry', ((x - 0.5) * 10).toFixed(2) + 'deg');
+      card.style.setProperty('--rx', ((0.5 - y) * 8).toFixed(2) + 'deg');
+      card.style.setProperty('--gx', x * 100 + '%');
+      card.style.setProperty('--gy', y * 100 + '%');
+    });
+  }
+
+  const items = [...document.querySelectorAll<HTMLElement>('#rackGrid > *')];
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('.filters button')];
+  for (const b of buttons) {
+    b.addEventListener('click', () => {
+      const f = b.dataset.filter!;
+      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      const state = isCalm() ? null : Flip.getState(items);
+      items.forEach((el) => (el.hidden = !(f === 'All' || el.dataset.genre === f || el.dataset.genre === '*')));
+      if (state) {
+        Flip.from(state, {
+          duration: 0.55, ease: 'power3.inOut', absolute: true, scale: true,
+          onEnter: (els) => gsap.fromTo(els, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4 }),
+          onLeave: (els) => gsap.to(els, { opacity: 0, scale: 0.85, duration: 0.3 }),
+        });
+      }
+      blip(440, 0.05);
+    });
+  }
+</script>

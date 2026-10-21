@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dough Dodge</title>
+<meta name="robots" content="noindex">
+<style>
+  @font-face { font-family: "Bungee"; src: url("../../fonts/bungee.woff2") format("woff2"); font-display: swap; }
+  html, body { margin: 0; height: 100%; background: #1d0b09; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; width: 100%; height: 100%; outline: none; }
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="0" aria-label="Dough Dodge game. Use left and right arrow keys to move, Space to start."></canvas>
+<script>
+(() => {
+  const cv = document.getElementById('c'), c = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CHEESE = '#ffc23d', PEP = '#e8432f', CREAM = '#f7e8d3', ASH = '#bf9f93';
+  const load = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  const report = (points) => { try { if (parent !== window) parent.postMessage({ type: 'ev1l:score', points }, location.origin); } catch {} };
+
+  let ac = null;
+  const blip = (f, d = .07, type = 'square', vol = .04) => {
+    try {
+      if (!load('ev1l:sound', false)) return;
+      ac = ac || new AudioContext();
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, ac.currentTime); o.frequency.exponentialRampToValueAtTime(f * 1.8, ac.currentTime + d);
+      g.gain.setValueAtTime(vol, ac.currentTime); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d);
+      o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d);
+    } catch {}
+  };
+
+  const S = { started: false, over: false, paused: false, x: .5, tx: .5, items: [], score: 0, lives: 3, t: 0, spawn: 0, shake: 0, hitstop: 0, best: load('dough-dodge:best', 0) };
+  const reset = () => Object.assign(S, { started: true, over: false, x: .5, tx: .5, items: [], score: 0, lives: 3, t: 0, spawn: 0, shake: 0, hitstop: 0 });
+  const begin = () => { if (!S.started || S.over) { reset(); blip(600, .1); } };
+
+  const keys = {};
+  addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if ([' ', 'enter'].includes(e.key.toLowerCase())) { begin(); e.preventDefault(); }
+    if (e.key.startsWith('Arrow')) e.preventDefault();
+    if (e.key.toLowerCase() === 'p' && S.started && !S.over) S.paused = !S.paused;
+  });
+  addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+  const setX = e => { const r = cv.getBoundingClientRect(); S.tx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+  cv.addEventListener('pointermove', setX);
+  cv.addEventListener('pointerdown', e => { setX(e); cv.focus(); begin(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && S.started && !S.over) S.paused = true; });
+  cv.focus();
+
+  let prev = performance.now();
+  function frame(now) {
+    let dt = Math.min(.05, (now - prev) / 1000); prev = now;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    const w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    // s = device pixels per design unit; the design is laid out for an 800x500 board
+    const s = dpr * Math.min(1.5, Math.max(.6, Math.min(cv.clientWidth / 800, cv.clientHeight / 500)));
+    const live = S.started && !S.over && !S.paused;
+
+    if (live) {
+      if (keys.arrowleft || keys.a) S.tx = Math.max(0, S.tx - dt * 1.3);
+      if (keys.arrowright || keys.d) S.tx = Math.min(1, S.tx + dt * 1.3);
+    }
+    if (S.hitstop > 0) { S.hitstop -= dt; dt = 0; }
+    if (!live) dt = S.paused ? 0 : dt;
+
+    if (live) {
+      S.t += dt; S.x += (S.tx - S.x) * Math.min(1, dt * 14);
+      S.spawn -= dt;
+      if (S.spawn <= 0) {
+        S.spawn = Math.max(.22, .8 - S.t * .012);
+        const pin = Math.random() < .68;
+        S.items.push({ x: Math.random() * .9 + .05, y: -.08, v: (pin ? .32 : .26) + S.t * .006 + Math.random() * .1, pin, rot: Math.random() * 6 });
+      }
+    }
+
+    const px = S.x * w, py = h * .86, pr = 22 * s;
+    c.save();
+    if (S.shake > 0) { S.shake -= dt; if (!reduce) c.translate((Math.random() - .5) * 14 * s, (Math.random() - .5) * 14 * s); }
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#1d0b09'); g.addColorStop(1, '#3a1410');
+    c.fillStyle = g; c.fillRect(-20, -20, w + 40, h + 40);
+    c.strokeStyle = 'rgba(255,194,61,.06)'; c.lineWidth = s;
+    for (let x = 0; x < w; x += 32 * s) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+    c.fillStyle = PEP; c.globalAlpha = .55; c.fillRect(0, h - 6 * s, w * Math.min(1, S.t / 90), 6 * s); c.globalAlpha = 1;
+
+    for (let i = S.items.length - 1; i >= 0; i--) {
+      const it = S.items[i];
+      if (live) { it.y += it.v * dt; it.rot += dt * 5; }
+      const ix = it.x * w, iy = it.y * h;
+      if (live && Math.hypot(ix - px, iy - py) < (it.pin ? 26 : 24) * s) {
+        S.items.splice(i, 1);
+        if (it.pin) {
+          S.lives--; S.shake = .25; S.hitstop = .09; blip(110, .2, 'sawtooth', .06);
+          if (S.lives <= 0) {
+            S.over = true;
+            if (S.score > S.best) { S.best = S.score; save('dough-dodge:best', S.best); }
+            report(S.score);
+          }
+        } else { S.score += 25; blip(700, .06); }
+        continue;
+      }
+      if (it.y > 1.1) { S.items.splice(i, 1); if (it.pin && live) S.score += 5; continue; }
+      c.save(); c.translate(ix, iy);
+      if (it.pin) {
+        c.rotate(it.rot);
+        c.fillStyle = '#d9a46b'; c.fillRect(-26 * s, -6 * s, 52 * s, 12 * s);
+        c.fillStyle = '#8a5a2b'; c.fillRect(-36 * s, -3.5 * s, 10 * s, 7 * s); c.fillRect(26 * s, -3.5 * s, 10 * s, 7 * s);
+      } else {
+        c.fillStyle = PEP; c.beginPath(); c.arc(0, 0, 11 * s, 0, 7); c.fill();
+        c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.arc(3 * s, -3 * s, 2 * s, 0, 7); c.fill();
+      }
+      c.restore();
+    }
+
+    c.save(); c.translate(px, py); c.rotate((S.tx - S.x) * 2);
+    c.fillStyle = CHEESE; c.beginPath(); c.moveTo(-pr, -pr * .6); c.lineTo(pr, -pr * .6); c.lineTo(0, pr * 1.1); c.fill();
+    c.fillStyle = '#c9862b'; c.fillRect(-pr, -pr * .85, pr * 2, pr * .3);
+    c.fillStyle = PEP; c.beginPath(); c.arc(-6 * s, -2 * s, 4 * s, 0, 7); c.arc(6 * s, 6 * s, 3.4 * s, 0, 7); c.fill();
+    c.restore();
+    c.restore();
+
+    const fs = Math.max(11, 12 * s);
+    c.font = `600 ${fs}px ui-monospace, Menlo, monospace`; c.textBaseline = 'top'; c.fillStyle = CREAM;
+    c.fillText(`SCORE ${String(S.score).padStart(5, '0')}`, 16 * s, 16 * s);
+    c.textAlign = 'right';
+    c.fillText(`BEST ${String(S.best).padStart(5, '0')}   ${'♥'.repeat(Math.max(0, S.lives))}`, w - 16 * s, 16 * s);
+    c.textAlign = 'left';
+
+    if (!S.started || S.over || S.paused) {
+      c.fillStyle = 'rgba(15,5,5,.62)'; c.fillRect(0, 0, w, h);
+      c.textAlign = 'center'; c.fillStyle = CHEESE;
+      const big = Math.min(56 * s, w / 9);
+      c.font = `${big}px Bungee, Impact, sans-serif`;
+      c.fillText(S.paused ? 'PAUSED' : S.over ? 'BURNT!' : 'DOUGH DODGE', w / 2, h * .3);
+      c.fillStyle = CREAM; c.font = `600 ${fs * 1.08}px ui-monospace, Menlo, monospace`;
+      const line1 = S.paused ? 'Press P to keep going' : S.over ? `Score ${S.score}. Tap or press Space to retry.` : 'Tap or press Space to start';
+      c.fillText(line1, w / 2, h * .3 + big * 1.35);
+      c.fillStyle = ASH;
+      c.fillText('Dodge the rolling pins. Catch pepperoni.', w / 2, h * .3 + big * 1.35 + fs * 2);
+      c.textAlign = 'left';
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

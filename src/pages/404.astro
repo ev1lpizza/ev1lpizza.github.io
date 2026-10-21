@@ -1,0 +1,17 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../data/site';
+---
+<Base title="Page not found">
+  <section class="wrap lost">
+    <span class="mono kicker">Error 404</span>
+    <h1>This slice got eaten</h1>
+    <p>The page you wanted isn't on the menu. It may have moved, or the link has a typo.</p>
+    <a class="btn primary" href={url('')}>Back to the arcade</a>
+  </section>
+</Base>
+<style>
+  .lost { padding-block: clamp(64px, 12vw, 140px); display: grid; gap: 16px; justify-items: start; }
+  h1 { font-size: clamp(38px, 7vw, 88px); line-height: .92; margin: 0; max-width: 12ch; }
+  p { color: var(--ash); max-width: 46ch; margin: 0 0 8px; }
+</style>
