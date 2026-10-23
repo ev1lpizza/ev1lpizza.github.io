@@ -1,0 +1,18 @@
+Pokémon sprites (sprites/pokemon/)
+  Source: PokeAPI sprite collection, https://github.com/PokeAPI/sprites
+  Files are named after each Pokémon, for example "mr-mime.png".
+  The Electric, Rock, Ground, Poison, Flying, and Ice Pokémon added later
+  (Mareep to Abomasnow) come from the same collection (sprites/pokemon/<number>.png).
+  snorlax.png (the sleeping Snorlax mystery event) is the collection's
+  sprites/pokemon/143.png.
+
+Professor Oak, trainer classes, and gym leaders (sprites/trainers/)
+  Source: Pokémon Showdown, https://play.pokemonshowdown.com/sprites/trainers/
+  kindler.png is Showdown's "kindler-gen3.png".
+  guitarist.png, hiker.png, ruinmaniac.png, biker.png, birdkeeper.png, and
+  skier.png are Showdown's files of the same names.
+  rival.png (your rival) is Showdown's "blue.png".
+
+Pokémon and all related characters and artwork are owned by Nintendo,
+Game Freak, and The Pokémon Company. They're used here in a personal,
+non-commercial fan project only.

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PokéTower</title>
+  <script type="module" crossorigin src="./assets/index-Dqwg_x3X.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CPF9i0HN.css">
+</head>
+<body>
+  <!-- game.js fills this box with whatever screen the player is on. -->
+  <main id="game"></main>
+
+  <!-- If this file is opened straight from the folder (a "file:" address
+       instead of "http:"), the game can't load, so send the player to the
+       dev server instead. When the server isn't running, explain how to start it. -->
+  <script>
+    if (location.protocol === "file:") {
+      const address = "http://localhost:5173/";
+      document.getElementById("game").innerHTML =
+        '<div style="max-width: 560px; margin: 60px auto; padding: 24px; font: 16px/1.6 sans-serif; ' +
+        'background: #f8f8f0; border: 4px solid #202028; border-radius: 6px;">' +
+        "<h1 style='margin-top: 0; font-size: 22px;'>Looking for the game...</h1>" +
+        "<p>The game now runs from a local server at <a href='" + address + "'>" + address + "</a>.</p>" +
+        "<p>If nothing happens, the server isn't running yet. Start it by opening a terminal " +
+        "in the game's folder and typing <code>npm run dev</code>, then refresh this page.</p></div>";
+      // Check whether the server is up. "no-cors" lets us ask from a file page;
+      // we can't read the answer, but getting one at all means it's running.
+      fetch(address, { mode: "no-cors" })
+        .then(() => { location.href = address; })
+        .catch(() => {});
+    }
+  </script>
+
+  <!-- Vite starts the game from src/main.ts. -->
+</body>
+</html>
