@@ -30,6 +30,39 @@ export const RENDERERS: Record<string, Draw> = {
     });
     const jy = Math.abs(Math.sin(t * 3)) * 40; c.fillStyle = cssVar('--cheese'); c.fillRect(w * 0.25, h * 0.82 - 22 - jy, 14, 22);
   },
+  forecast(c, t, w, h) {
+    // Paper weather map: drifting isobars, a slow front and falling rain.
+    c.fillStyle = '#f3ecdc'; c.fillRect(0, 0, w, h);
+    c.lineWidth = Math.max(1, h / 220); c.strokeStyle = 'rgba(47,93,134,.55)';
+    const cx = w * (0.3 + Math.sin(t * 0.15) * 0.06), cy = h * 0.48;
+    for (let i = 1; i <= 7; i++) {
+      c.beginPath();
+      for (let a = 0; a <= 64; a++) {
+        const th = (a / 64) * Math.PI * 2, rr = i * h * 0.075 * (1 + 0.18 * Math.sin(th * 3 + t * 0.6 + i));
+        c.lineTo(cx + Math.cos(th) * rr * 1.5, cy + Math.sin(th) * rr);
+      }
+      c.stroke();
+    }
+    c.fillStyle = '#9a3b2e'; c.font = `bold ${Math.round(h * 0.09)}px "Courier New", monospace`;
+    c.fillText('L', cx - h * 0.03, cy + h * 0.03);
+    const fx = w * 0.72 + Math.sin(t * 0.3) * w * 0.04;
+    c.strokeStyle = '#2f5d86'; c.lineWidth = Math.max(1.5, h / 140); c.beginPath();
+    for (let y = 0; y <= h; y += 4) c.lineTo(fx + Math.sin(y * 0.02 + t) * w * 0.03, y);
+    c.stroke();
+    c.fillStyle = '#2f5d86';
+    for (let y = 18; y < h; y += 36) {
+      const x = fx + Math.sin(y * 0.02 + t) * w * 0.03;
+      c.beginPath(); c.moveTo(x, y - 7); c.lineTo(x + 11, y); c.lineTo(x, y + 7); c.fill();
+    }
+    const r = rnd(11); c.strokeStyle = 'rgba(47,93,134,.6)'; c.lineWidth = Math.max(1, h / 300);
+    for (let i = 0; i < 60; i++) {
+      const x = fx + w * 0.04 + r() * w * 0.3, y = (r() * h + t * h * 0.5) % h;
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x - 2, y + h * 0.03); c.stroke();
+    }
+    const acc = Math.min(92.3, 80 + (t * 1.1) % 14).toFixed(1);
+    c.fillStyle = '#2a2620'; c.font = `bold ${Math.round(h * 0.07)}px "Courier New", monospace`;
+    c.fillText(`ACCURACY ${acc}%`, w * 0.05, h * 0.12);
+  },
   default(c, t, w, h) {
     c.fillStyle = '#1a0a08'; c.fillRect(0, 0, w, h);
     const s = 28, cheese = cssVar('--cheese');
